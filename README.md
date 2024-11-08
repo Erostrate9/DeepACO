@@ -1,3 +1,9 @@
+# Project
+
+Eric Sun, Ziwen Wang
+
+Code related to our experiments will be put into path `project/`.
+
 # [NeurIPS 2023] DeepACO: Neural-enhanced Ant Systems for Combinatorial Optimization
 
 🥳 **Welcome!** This codebase accompanies the paper [*DeepACO: Neural-enhanced Ant Systems for Combinatorial Optimization*](https://arxiv.org/abs/2309.14032). 
