@@ -1,53 +1,49 @@
 import torch
 import time
+from tqdm import tqdm
 
 class GreedyTSP:
-    def __init__(self, distances, device='cpu'):
+    def __init__(self, device='cpu'):
         """
         Initialize the greedy TSP solver.
-
-        Args:
-            distances: torch tensor of shape (n, n) representing the distance matrix
-            device: computational device (cpu or cuda)
         """
-        self.distances = distances
-        self.problem_size = distances.shape[0]
+        print(f'GreedyTSP is using: {device}')
         self.device = device
 
-    @torch.no_grad()
-    def run(self):
-        """
-        Solve the TSP using the greedy algorithm.
+    # @torch.no_grad()
+    # def run(self):
+    #     """
+    #     Solve the TSP using the greedy algorithm.
 
-        Returns:
-            path: torch tensor of shape (problem_size,) representing the TSP tour
-            total_cost: scalar value representing the cost of the tour
-        """
-        n = self.problem_size
-        visited = torch.zeros(n, dtype=torch.bool, device=self.device)
-        current_node = 0
-        path = [current_node]
-        visited[current_node] = True
-        total_cost = 0.0
+    #     Returns:
+    #         path: torch tensor of shape (problem_size,) representing the TSP tour
+    #         total_cost: scalar value representing the cost of the tour
+    #     """
+    #     n = self.problem_size
+    #     visited = torch.zeros(n, dtype=torch.bool, device=self.device)
+    #     current_node = 0
+    #     path = [current_node]
+    #     visited[current_node] = True
+    #     total_cost = 0.0
 
-        for _ in range(n - 1):
-            # Find the nearest unvisited neighbor
-            unvisited_mask = ~visited
-            distances_from_current = self.distances[current_node]
-            distances_from_current[~unvisited_mask] = float('inf')  # Ignore visited nodes
-            next_node = torch.argmin(distances_from_current).item()
+    #     for _ in range(n - 1):
+    #         # Find the nearest unvisited neighbor
+    #         unvisited_mask = ~visited
+    #         distances_from_current = self.distances[current_node]
+    #         distances_from_current[~unvisited_mask] = float('inf')  # Ignore visited nodes
+    #         next_node = torch.argmin(distances_from_current).item()
             
-            # Update path and cost
-            total_cost += self.distances[current_node, next_node].item()
-            path.append(next_node)
-            visited[next_node] = True
-            current_node = next_node
+    #         # Update path and cost
+    #         total_cost += self.distances[current_node, next_node].item()
+    #         path.append(next_node)
+    #         visited[next_node] = True
+    #         current_node = next_node
 
-        # Complete the tour by returning to the starting node
-        total_cost += self.distances[current_node, path[0]].item()
-        path.append(path[0])
+    #     # Complete the tour by returning to the starting node
+    #     total_cost += self.distances[current_node, path[0]].item()
+    #     path.append(path[0])
 
-        return torch.tensor(path, device=self.device), total_cost
+    #     return torch.tensor(path, device=self.device), total_cost
 
     @torch.no_grad()
     def infer_instance(self, distances):
@@ -81,7 +77,7 @@ class GreedyTSP:
         return total_cost
 
 @torch.no_grad()
-def test_greedy(dataset, greedy_solver):
+def test_greedy(dataset, greedy_solver, show_progress=False):
     """
     Test the greedy algorithm on the given dataset.
 
@@ -95,9 +91,14 @@ def test_greedy(dataset, greedy_solver):
     """
     total_cost = 0.0
     start = time.time()
-    for _, distances in dataset:
-        cost = greedy_solver.infer_instance(distances)
-        total_cost += cost
+    if show_progress:
+        for _, distances in tqdm(dataset, desc="Testing Greedy Algorithm"):
+            cost = greedy_solver.infer_instance(distances)
+            total_cost += cost
+    else:
+        for _, distances in dataset:
+            cost = greedy_solver.infer_instance(distances)
+            total_cost += cost
     end = time.time()
 
     avg_cost = total_cost / len(dataset)

@@ -177,7 +177,7 @@ class ACO():
         '''
         assert paths.shape == (self.n_ants, self.problem_size)
         u = paths
-        v = np.roll(u, shift=1, axis=1)  # shape: (n_ants, problem_size)
+        v = np.torch.roll(u, shift=1, axis=1)  # shape: (n_ants, problem_size)
         # assert (self.distances[u, v] > 0).all()
         return np.sum(numpy_distances[u, v], axis=1)
     
