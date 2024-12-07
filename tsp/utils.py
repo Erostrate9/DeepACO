@@ -1,7 +1,9 @@
 import torch
 from torch_geometric.data import Data
 from data_helper import load_symmetric_tsp
- 
+import os 
+import numpy as np
+
 def gen_distance_matrix(tsp_coordinates):
     '''
     Args:
@@ -76,13 +78,29 @@ def load_test_dataset(n_node, k_sparse, device):
         val_list.append((data, distances))
     return val_list
 
-def load_single_test_instance(file_path='../data/tsp/TSPLIB/berlin52.tsp', device='cpu'):
+def load_TSPLIB_test_instance(dir='../data/tsp/TSPLIB/', file_names=['berlin52.tsp'], device='cpu', k_sparse=None, normalized=False):
+    assert os.path.isdir(dir)
     val_list = []
-    _, _, tsp_coordinates = load_symmetric_tsp(file_path)
-    tsp_coordinates = torch.Tensor(tsp_coordinates).to(device)
-    
-    data, distances = gen_pyg_data_fully_connected(tsp_coordinates)
-    val_list.append((data, distances))
+    if not file_names:
+        file_names = [f for f in os.listdir(dir) if f.endswith(".tsp")]
+    for file_name in file_names:
+        file_path = os.path.join(dir, file_name)
+        if not os.path.exists(file_path):
+            continue
+        _, _, tsp_coordinates = load_symmetric_tsp(file_path)
+        if normalized:
+            min_val = np.min(tsp_coordinates)
+            max_val = np.max(tsp_coordinates)
+            if min_val == max_val:
+                tsp_coordinates = np.zeros_like(tsp_coordinates)  # Assign all values as 0
+            else:
+                tsp_coordinates = (tsp_coordinates - min_val) / (max_val - min_val)
+        tsp_coordinates = torch.Tensor(tsp_coordinates).to(device)
+        if k_sparse==None:
+            data, distances = gen_pyg_data_fully_connected(tsp_coordinates)
+        else:
+            data, distances = gen_pyg_data(tsp_coordinates, k_sparse=k_sparse)
+        val_list.append((data, distances))
     return val_list
 
 if __name__ == "__main__":
