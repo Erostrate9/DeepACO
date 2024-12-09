@@ -13,7 +13,8 @@ else:
     device = 'cpu'
 
 @torch.no_grad()
-def infer_instance(model, pyg_data, distances, n_ants, t_aco_diff, k_sparse=None):
+def infer_instance(model, pyg_data, distances, n_ants, t_aco_diff, k_sparse=None, local_search='nls'):
+    assert local_search in [None, "2opt", "nls"]
     model.eval()
     heu_vec = model(pyg_data)
     heu_mat = model.reshape(pyg_data, heu_vec) + EPS
@@ -23,7 +24,7 @@ def infer_instance(model, pyg_data, distances, n_ants, t_aco_diff, k_sparse=None
         heuristic=heu_mat.cpu(),
         distances=distances.cpu(),
         device='cpu',
-        local_search='nls',
+        local_search=local_search,
     )
     
     results = torch.zeros(size=(len(t_aco_diff),))
@@ -34,13 +35,13 @@ def infer_instance(model, pyg_data, distances, n_ants, t_aco_diff, k_sparse=None
         
     
 @torch.no_grad()
-def test(dataset, model, n_ants, t_aco, k_sparse=None):
+def test(dataset, model, n_ants, t_aco, k_sparse=None, local_search='nls'):
     _t_aco = [0] + t_aco
     t_aco_diff = [_t_aco[i+1]-_t_aco[i] for i in range(len(_t_aco)-1)]
     sum_results = torch.zeros(size=(len(t_aco_diff),))
     start = time.time()
     for pyg_data, distances in tqdm(dataset):
-        results = infer_instance(model, pyg_data, distances, n_ants, t_aco_diff, k_sparse)
+        results = infer_instance(model, pyg_data, distances, n_ants, t_aco_diff, k_sparse, local_search)
         sum_results += results
     end = time.time()
     
