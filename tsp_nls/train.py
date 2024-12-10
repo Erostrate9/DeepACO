@@ -156,12 +156,16 @@ if __name__ == "__main__":
     n_node = opt.nodes
     
     print(f'The device to train NNs: {device}')
+    
+    K = {20:10, 50:20, 100:20, 50:500, 100:1000}
+    k_sparse = K[n_node] if n_node in K else n_node//10
 
     train(
         opt.nodes, 
         opt.ants, 
         opt.steps, 
-        opt.epochs, 
+        opt.epochs,
+        k_sparse= k_sparse,
         batch_size = opt.batch_size, 
         test_size = opt.test_size, 
         pretrained = opt.pretrained,
