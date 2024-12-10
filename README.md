@@ -2,7 +2,7 @@
 
 Eric Sun, Ziwen Wang
 
-Code related to our experiments will be put into path `project/`.
+Code related to our experiments are located in `project/*.ipynb`.
 
 # [NeurIPS 2023] DeepACO: Neural-enhanced Ant Systems for Combinatorial Optimization
 
