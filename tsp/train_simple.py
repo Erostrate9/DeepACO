@@ -5,6 +5,7 @@ import os
 from net import Net
 from aco import ACO
 from utils import gen_pyg_data, load_val_dataset
+from tqdm import tqdm
 
 torch.manual_seed(1234)
 
@@ -92,7 +93,7 @@ def train(n_node, n_ants, steps_per_epoch, epochs, k_sparse=None, savepath = "..
     sum_time = 0
     best_epoch = -1
     best_avg_aco_best = avg_aco_best
-    for epoch in range(0, epochs):
+    for epoch in tqdm(range(0, epochs), f'Training DeepACO (without LC)...'):
         start = time.time()
         train_epoch(n_node, n_ants, k_sparse, epoch, steps_per_epoch, net, optimizer)
         sum_time += time.time() - start
