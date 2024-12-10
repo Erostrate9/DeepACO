@@ -124,10 +124,9 @@ def train(n_node, n_ants, steps_per_epoch, epochs, k_sparse = None, batch_size =
         torch.save(net.state_dict(), os.path.join(savepath, f'tsp{n_node}-last.pt'))
 
     print('Final total training epochs:', epochs)
-    print('Final total training steps:', epochs*batch_size*steps_per_epoch)
     print(f'Best parameters was obtained from epoch {best_epoch}')
     print('\ntotal training duration:', sum_time)
-    print('Final total training instances processed:', epochs*batch_size)
+    print('Final total training instances processed:', epochs*steps_per_epoch)
     return f'../pretrained/tsp_nls/tsp{n_node}.pt'
 
 
@@ -141,9 +140,9 @@ if __name__ == "__main__":
                         help="The device to train NNs")
     parser.add_argument("-p", "--pretrained", type=str, default=None, help="Path to pretrained model")
     parser.add_argument("-a", "--ants", type=int, default=30, help="Number of ants (in ACO algorithm)")
-    parser.add_argument("-b", "--batch_size", type=int, default=20, help="Batch size")
-    parser.add_argument("-s", "--steps", type=int, default=20, help="Steps per epoch")
-    parser.add_argument("-e", "--epochs", type=int, default=20, help="Epochs to run")
+    parser.add_argument("-b", "--batch_size", type=int, default=1, help="Batch size")
+    parser.add_argument("-s", "--steps", type=int, default=128, help="Steps per epoch")
+    parser.add_argument("-e", "--epochs", type=int, default=5, help="Epochs to run")
     parser.add_argument("-t", "--test_size", type=int, default=None, help="Number of instances for validation")
     parser.add_argument("-o", "--output", type=str, default="../pretrained/tsp_nls",
                         help="The directory to store checkpoints")
