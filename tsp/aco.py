@@ -162,18 +162,40 @@ class ACO():
         else:
             return torch.stack(paths_list)
         
+    # def pick_move(self, prev, mask, require_prob):
+    #     '''
+    #     Args:
+    #         prev: tensor with shape (n_ants,), previous nodes for all ants
+    #         mask: bool tensor with shape (n_ants, p_size), masks (0) for the visited cities
+    #     '''
+    #     pheromone = self.pheromone[prev] # shape: (n_ants, p_size)
+    #     heuristic = self.heuristic[prev] # shape: (n_ants, p_size)
+    #     dist = ((pheromone ** self.alpha) * (heuristic ** self.beta) * mask) # shape: (n_ants, p_size)
+    #     dist = Categorical(dist)
+    #     actions = dist.sample() # shape: (n_ants,)
+    #     log_probs = dist.log_prob(actions) if require_prob else None # shape: (n_ants,)
+    #     return actions, log_probs
     def pick_move(self, prev, mask, require_prob):
         '''
         Args:
             prev: tensor with shape (n_ants,), previous nodes for all ants
             mask: bool tensor with shape (n_ants, p_size), masks (0) for the visited cities
         '''
-        pheromone = self.pheromone[prev] # shape: (n_ants, p_size)
-        heuristic = self.heuristic[prev] # shape: (n_ants, p_size)
-        dist = ((pheromone ** self.alpha) * (heuristic ** self.beta) * mask) # shape: (n_ants, p_size)
+        pheromone = self.pheromone[prev]  # shape: (n_ants, p_size)
+        heuristic = self.heuristic[prev]  # shape: (n_ants, p_size)
+        
+        # Compute raw scores
+        raw_scores = ((pheromone ** self.alpha) * (heuristic ** self.beta)) * mask
+        
+        # Avoid zero-sum rows
+        row_sums = raw_scores.sum(dim=1, keepdim=True)
+        row_sums[row_sums == 0] = 1  # Prevent division by zero
+        dist = raw_scores / row_sums  # Normalize to create a probability distribution
+        
+        # Create categorical distribution
         dist = Categorical(dist)
-        actions = dist.sample() # shape: (n_ants,)
-        log_probs = dist.log_prob(actions) if require_prob else None # shape: (n_ants,)
+        actions = dist.sample()  # shape: (n_ants,)
+        log_probs = dist.log_prob(actions) if require_prob else None  # shape: (n_ants,)
         return actions, log_probs
         
 
