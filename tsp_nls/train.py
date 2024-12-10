@@ -157,7 +157,7 @@ if __name__ == "__main__":
     
     print(f'The device to train NNs: {device}')
     
-    K = {20:10, 50:20, 100:20, 50:500, 100:1000}
+    K = {20:10, 50:20, 100:20, 50:500, 1000:100}
     k_sparse = K[n_node] if n_node in K else n_node//10
 
     train(
