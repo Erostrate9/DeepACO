@@ -15,13 +15,15 @@ else:
 @torch.no_grad()
 def infer_instance(model, pyg_data, distances, n_ants, t_aco_diff, k_sparse=None, local_search='nls'):
     assert local_search in [None, "2opt", "nls"]
-    model.eval()
-    heu_vec = model(pyg_data)
-    heu_mat = model.reshape(pyg_data, heu_vec) + EPS
-
+    heu_mat = None
+    if model is not None:
+        model.eval()
+        heu_vec = model(pyg_data)
+        heu_mat = model.reshape(pyg_data, heu_vec) + EPS
+        heu_mat = heu_mat.cpu()
     aco = ACO(
         n_ants=n_ants,
-        heuristic=heu_mat.cpu(),
+        heuristic=heu_mat,
         distances=distances.cpu(),
         device='cpu',
         local_search=local_search,

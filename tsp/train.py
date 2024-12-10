@@ -8,9 +8,9 @@ from aco import ACO
 from utils import gen_pyg_data, load_val_dataset
 from tqdm import tqdm
 
+lr = 3e-4
 EPS = 1e-10
 T = 5
-W = 0.95
 
 def train_instance(model, optimizer, data, n_ants):
     model.train()
@@ -19,24 +19,18 @@ def train_instance(model, optimizer, data, n_ants):
     for pyg_data, distances in data:
         heu_vec = model(pyg_data)
         heu_mat = model.reshape(pyg_data, heu_vec) + EPS
-        
         aco = ACO(
             n_ants=n_ants,
             heuristic=heu_mat,
             distances=distances,
-            device=device,
-            local_search='nls',
-        )
-
-        costs, log_probs, paths = aco.sample()
+            device=device
+            )
+        
+        costs, log_probs = aco.sample()
         baseline = costs.mean()
-        costs_2opt, _ = aco.sample_2opt(paths)
-        baseline_2opt = costs_2opt.mean()
-        cost = (costs_2opt - baseline_2opt) * W + (costs - baseline) * (1 - W)
-        reinforce_loss = torch.sum(cost.detach() * log_probs.sum(dim=0)) / aco.n_ants
+        reinforce_loss = torch.sum((costs - baseline) * log_probs.sum(dim=0)) / aco.n_ants
         sum_loss += reinforce_loss
         count += 1
-
     sum_loss = sum_loss/count
     optimizer.zero_grad()
     sum_loss.backward()
@@ -47,25 +41,23 @@ def infer_instance(model, pyg_data, distances, n_ants):
     model.eval()
     heu_vec = model(pyg_data)
     heu_mat = model.reshape(pyg_data, heu_vec) + EPS
-    
     aco = ACO(
         n_ants=n_ants,
-        heuristic=heu_mat.cpu(),
-        distances=distances.cpu(),
-        device='cpu',
-        local_search='nls',
+        heuristic=heu_mat,
+        distances=distances,
+        device=device
         )
-    costs = aco.sample(inference = True)[0]
+    costs, log_probs = aco.sample()
+    aco.run(n_iterations=T)
     baseline = costs.mean()
     best_sample_cost = torch.min(costs)
-    best_aco_1 = aco.run(n_iterations=1, inference = True)
-    best_aco_T = aco.run(n_iterations=T-1, inference = True)
-    return np.array([baseline.item(), best_sample_cost.item(), best_aco_1, best_aco_T])
+    best_aco_cost = aco.lowest_cost
+    return baseline.item(), best_sample_cost.item(), best_aco_cost.item()
 
 def generate_traindata(count, n_node, k_sparse):
     for _ in range(count):
         instance = torch.rand(size=(n_node, 2), device=device)
-        yield gen_pyg_data(instance, k_sparse=k_sparse, start_node=0)
+        yield gen_pyg_data(instance, k_sparse=k_sparse)
 
 def train_epoch(n_node,
                 n_ants, 
@@ -90,14 +82,14 @@ def validation(n_ants, epoch, net, val_dataset):
     return avg_stats
 
 
-def train(n_node, n_ants, steps_per_epoch, epochs, k_sparse = None, batch_size = 3, test_size = None, pretrained = None, savepath = "../pretrained/tsp_nls", lr=6e-4):
+def train(n_node, n_ants, steps_per_epoch, epochs, k_sparse = None, batch_size = 3, test_size = None, pretrained = None, savepath = "../pretrained/tsp"):
     k_sparse = k_sparse or n_node//10
     net = Net().to(device)
     if pretrained:
         net.load_state_dict(torch.load(pretrained, map_location=device))
     optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
-    val_list = load_val_dataset(n_node, k_sparse, device, start_node=0)
+    val_list = load_val_dataset(n_node, k_sparse, device)
     if test_size is not None:
         val_list = val_list[:test_size]
     
@@ -108,7 +100,7 @@ def train(n_node, n_ants, steps_per_epoch, epochs, k_sparse = None, batch_size =
 
     sum_time = 0
     best_epoch = -1
-    for epoch in tqdm(range(1, epochs+1), "Training DeepACO (NLS)..."):
+    for epoch in tqdm(range(1, epochs+1), "Training DeepACO (without local search)..."):
         start = time.time()
         train_epoch(n_node, n_ants, k_sparse, epoch, steps_per_epoch, net, optimizer, batch_size=batch_size)
         sum_time += time.time() - start
@@ -128,24 +120,24 @@ def train(n_node, n_ants, steps_per_epoch, epochs, k_sparse = None, batch_size =
     print(f'Best parameters was obtained from epoch {best_epoch}')
     print('\ntotal training duration:', sum_time)
     print('Final total training instances processed:', epochs*batch_size)
-    return f'../pretrained/tsp_nls/tsp{n_node}.pt'
+    return f'../pretrained/tsp/tsp{n_node}.pt'
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("nodes", metavar='N', type=int, help="Problem scale")
-    parser.add_argument("-l", "--lr", metavar='η', type=float, default=6e-4, help="Learning rate")
+    parser.add_argument("-l", "--lr", metavar='η', type=float, default=3e-4, help="Learning rate")
     parser.add_argument("-d", "--device", type=str, 
                         default=("cuda:0" if torch.cuda.is_available() else "cpu"), 
                         help="The device to train NNs")
     parser.add_argument("-p", "--pretrained", type=str, default=None, help="Path to pretrained model")
-    parser.add_argument("-a", "--ants", type=int, default=30, help="Number of ants (in ACO algorithm)")
-    parser.add_argument("-b", "--batch_size", type=int, default=20, help="Batch size")
-    parser.add_argument("-s", "--steps", type=int, default=20, help="Steps per epoch")
+    parser.add_argument("-a", "--ants", type=int, default=20, help="Number of ants (in ACO algorithm)")
+    parser.add_argument("-b", "--batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument("-s", "--steps", type=int, default=128, help="Steps per epoch")
     parser.add_argument("-e", "--epochs", type=int, default=20, help="Epochs to run")
     parser.add_argument("-t", "--test_size", type=int, default=None, help="Number of instances for validation")
-    parser.add_argument("-o", "--output", type=str, default="../pretrained/tsp_nls",
+    parser.add_argument("-o", "--output", type=str, default="../pretrained/tsp",
                         help="The directory to store checkpoints")
     opt = parser.parse_args()
     
@@ -167,5 +159,4 @@ if __name__ == "__main__":
         test_size = opt.test_size, 
         pretrained = opt.pretrained,
         savepath = opt.output,
-        lr=lr
     )

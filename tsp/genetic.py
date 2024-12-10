@@ -1,5 +1,6 @@
 import torch
 import time
+from tqdm import tqdm
 
 class GeneticAlgorithmTSP:
     def __init__(self, 
@@ -151,7 +152,7 @@ def test_genetic(dataset, pop_size=50, crossover_rate=0.8, mutation_rate=0.2, el
     sum_results = torch.zeros(size=(len(t_ga_diff),), device=device)
     start = time.time()
     res = []
-    for pyg_data, distances in dataset:
+    for pyg_data, distances in tqdm(dataset, "Running Genetic Algorithm..."):
         results = infer_instance_ga(distances, t_ga_diff, pop_size=pop_size, crossover_rate=crossover_rate, 
                                     mutation_rate=mutation_rate, elitism_count=elitism_count, 
                                     tournament_size=tournament_size, device=device)
