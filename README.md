@@ -1,8 +1,9 @@
 # Project
+CSI5137B Project – Reproducing and Analyzing DeepACO Performance on TSP: Applying Deep Reinforcement Learning in SBSE
 
 Eric Sun, Ziwen Wang
 
-Code related to our experiments are located in `project/*.ipynb`.
+Code related to our experiments are located in `project/*.ipynb`. We added TSPLIB support and revised training/testing scripts.
 
 # [NeurIPS 2023] DeepACO: Neural-enhanced Ant Systems for Combinatorial Optimization
 
