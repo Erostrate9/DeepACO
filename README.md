@@ -3,7 +3,7 @@ CSI5137B Project – Reproducing and Analyzing DeepACO Performance on TSP: Apply
 
 Eric Sun, Ziwen Wang
 
-Code related to our experiments are located in `project/*.ipynb`. We added TSPLIB support and revised training/testing scripts.
+Code related to our experiments are located in `project/*.ipynb`, `tsp_nls/*.py` and `tsp/*.py`, . We added TSPLIB support (`tsp/data_helper.py and utils.py`), two new baseline algorithms (genetic algorithm `tsp/genetic.py` and greedy algorithm `tsp/greedy.py`), and revised training/testing scripts (`tsp_nls/train.py`, `tsp_nls/test.py`, `tsp/train.py`, `tsp/test.py`).
 
 # [NeurIPS 2023] DeepACO: Neural-enhanced Ant Systems for Combinatorial Optimization
 
